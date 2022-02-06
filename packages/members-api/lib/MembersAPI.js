@@ -208,7 +208,7 @@ module.exports = function MembersAPI({
 
     const users = memberRepository;
 
-    async function sendEmailWithMagicLink({email, requestedType, tokenData, options = {forceEmailType: false}, requestSrc = '', referer = ''}) {
+    async function sendEmailWithMagicLink({email, requestedType, tokenData, options = {forceEmailType: false}, requestSrc = ''}) {
         let type = requestedType;
         if (!options.forceEmailType) {
             const member = await users.get({email});
@@ -218,11 +218,16 @@ module.exports = function MembersAPI({
                 type = 'signup';
             }
         }
-        return magicLinkService.sendMagicLink({email, type, requestSrc, tokenData: Object.assign({email}, tokenData), referer});
+        return magicLinkService.sendMagicLink({email, type, requestSrc, tokenData: Object.assign({email}, tokenData)});
     }
 
     function getMagicLink(email) {
         return magicLinkService.getMagicLink({tokenData: {email}, type: 'signin'});
+    }
+
+    async function getRefererFromMagicLinkToken(token) {
+        const {referer} = await magicLinkService.getDataFromToken(token);
+        return referer;
     }
 
     async function getMemberDataFromMagicLinkToken(token) {
@@ -335,6 +340,7 @@ module.exports = function MembersAPI({
     return {
         middleware,
         getMemberDataFromMagicLinkToken,
+        getRefererFromMagicLinkToken,
         getMemberIdentityToken,
         getMemberIdentityData,
         setMemberGeolocationFromIp,

@@ -286,7 +286,8 @@ module.exports = class RouterController {
 
     async sendMagicLink(req, res) {
         const {email, emailType, requestSrc} = req.body;
-        const {referer} = req.headers;
+        const refHeader = req.headers.referer;
+        const referer = refHeader?(new URL(refHeader).pathname):'';
 
         if (!email) {
             res.writeHead(400);
@@ -297,12 +298,12 @@ module.exports = class RouterController {
             if (!this._allowSelfSignup()) {
                 const member = await this._memberRepository.get({email});
                 if (member) {
-                    const tokenData = {};
-                    await this._sendEmailWithMagicLink({email, tokenData, requestedType: emailType, requestSrc, referer});
+                    const tokenData = {referer};   
+                    await this._sendEmailWithMagicLink({email, tokenData, requestedType: emailType, requestSrc});
                 }
             } else {
-                const tokenData = _.pick(req.body, ['labels', 'name']);
-                await this._sendEmailWithMagicLink({email, tokenData, requestedType: emailType, requestSrc, referer});
+                const tokenData = {..._.pick(req.body, ['labels', 'name']), referer};
+                await this._sendEmailWithMagicLink({email, tokenData, requestedType: emailType, requestSrc});
             }
             res.writeHead(201);
             return res.end('Created.');
