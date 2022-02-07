@@ -197,15 +197,38 @@ module.exports = class RouterController {
 
         const member = email ? await this._memberRepository.get({email}, {withRelated: ['stripeCustomers', 'products']}) : null;
 
-        let successUrl = req.body.successUrl || this._config.checkoutSuccessUrl;
+        /*
+            Note: I don't love this if/else block!
+            
+            I need the req object to grab the referrer, and this mirrors how I did this in sendMagicLink below, 
+            but the existing code seems like it would prefer successUrl passed into this function via the body... 
+            but it feels quite weird to do that from membersApi, and weirder still from app.js in core? 
+    
+            (I'm also not sure we'll ever get to the final else (the default config), but we can't set up a custom URL there anyway because we won't have the req.)
+            
+            In the end I opted to leave this as-is because it seems the most obvious way to convey what's going on, but I hope we can discuss it. 
+        */
+        let successUrl;
+        if(req.body.successUrl){
+            successUrl = req.body.successUrl;
+        }else if(req.headers.referer){
+            const checkoutSuccessUrl = new URL(req.headers.referer);
+            checkoutSuccessUrl.searchParams.set('stripe', 'success'); 
+            successUrl = checkoutSuccessUrl.toString();
+        }else{
+            successUrl = this._config.checkoutSuccessUrl;
+        }
+
         let cancelUrl = req.body.cancelUrl || this._config.checkoutCancelUrl;
 
         if (!member && req.body.customerEmail && !req.body.successUrl) {
             const memberExistsForCustomer = await this._memberRepository.get({email: req.body.customerEmail});
+            const referer = req.headers.referer?(new URL(req.headers.referer).pathname):"/";
             if (!memberExistsForCustomer) {
                 successUrl = await this._magicLinkService.getMagicLink({
                     tokenData: {
-                        email: req.body.customerEmail
+                        email: req.body.customerEmail,
+                        referer
                     },
                     type: 'signup'
                 });
