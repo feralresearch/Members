@@ -56,7 +56,7 @@ class MagicLink {
 
         const type = options.type || 'signin';
         const requestSrc = options.requestSrc || '';
-
+      
         const url = this.getSigninURL(token, type, requestSrc);
 
         const info = await this.transporter.sendMail({

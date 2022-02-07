@@ -225,6 +225,11 @@ module.exports = function MembersAPI({
         return magicLinkService.getMagicLink({tokenData: {email}, type: 'signin'});
     }
 
+    async function getRefererFromMagicLinkToken(token) {
+        const {referer} = await magicLinkService.getDataFromToken(token);
+        return referer;
+    }
+
     async function getMemberDataFromMagicLinkToken(token) {
         const {email, labels = [], name = '', oldEmail} = await magicLinkService.getDataFromToken(token);
         if (!email) {
@@ -335,6 +340,7 @@ module.exports = function MembersAPI({
     return {
         middleware,
         getMemberDataFromMagicLinkToken,
+        getRefererFromMagicLinkToken,
         getMemberIdentityToken,
         getMemberIdentityData,
         setMemberGeolocationFromIp,
